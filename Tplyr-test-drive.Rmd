@@ -12,39 +12,180 @@ library(magrittr)
 library(Tplyr)
 library(kableExtra)
 load('data/adsl.Rdata')
+load('data/adae.Rdata')
+load('data/adlb.Rdata')
 ```
 
-## R Markdown
+## Take Tplyr for a Test Drive
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Welcome! We've created this repository and document to allow you to get some hands on experience using our packages [Tplyr](https://atorus-research.github.io/Tplyr/index.html) and [pharmaRTF](https://atorus-research.github.io/pharmaRTF/index.html). If you're viewing this on GitHub, then we recommend you hop on over to RStudio Cloud through [this link](tbd) to test drive the package for yourself without the hassle of setting things up for yourself. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Here we have a few hands on examples of Tplyr for you to use, explore, and experiment. For more in depth explanations of certain aspects of this package, check out our package website right [here](https://atorus-research.github.io/Tplyr/index.html). 
 
-```{r cars}
-tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
+So without further ado...
+
+## Example 1: Demographics
+
+Let's start with a basic demographics table, and let's make it no frills. This will start introducing you to the concept of stacking layers. For simplicity, let's also start by looking at sex, age, age category, and race.
+
+```{r Demographics 1}
+t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
+  add_layer(
+    group_count(SEX, by = "Sex n (%)")
+  ) %>% 
+  add_layer(
+    group_desc(AGE, by = "Age (years)")
+  ) %>% 
+  add_layer(
+    group_count(AGEGR1, by = "Age Categories n (%)")
+  ) %>% 
+  add_layer(
+    group_count(RACE, by = "Race n (%)") 
+  )
+
+t %>% 
+  build() %>% 
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
+```
+
+## Example 2: Demographics Cleaned Up
+
+That looks pretty good, but there's a few things that we can clean up a bit more:
+
+- Let's spell out the sexes explicitly
+- The order for the age categories is off
+- Let's assume that we want to show a few more races for which we had no subjects
+
+Factors can help us out here - let's see how. This can be handled easily with a bit of pre-processing.
+
+```{r Demographics 2}
+adsl <- adsl %>% 
+  mutate(
+    SEX = recode(SEX, M = "Male", F = "Female"), 
+    RACE = factor(RACE, c("AMERICAN INDIAN OR ALASKA NATIVE", "ASIAN", "BLACK OR AFRICAN AMERICAN", 
+                          "NATIVE HAWAIIN OR OTHER PACIFIC ISLANDER", "WHITE", "MULTIPLE")),
+    AGEGR1 = factor(AGEGR1, c('<65', '65-80', '>80'))
+  )
+
+t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
+  add_layer(
+    group_count(SEX, by = "Sex n (%)")
+  ) %>% 
+  add_layer(
+    group_desc(AGE, by = "Age (years)")
+  ) %>% 
+  add_layer(
+    group_count(AGEGR1, by = "Age Categories n (%)")
+  ) %>% 
+  add_layer(
+    group_count(RACE, by = "Race n (%)") 
+  )
+
+t %>% 
+  build() %>% 
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
+
+```
+
+## Example 3: Beyond the Defaults
+
+Let's change things up a bit. 
+
+- Let's use sex as a column variable, so we see the subjects within sex by treatment group. 
+- Let's also switch up the summary statistics performed on age, and take out the percentages in all of the count summaries.
+- Let's also add a total group into the mix
+
+```{r Demographics 3}
+t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y", cols=SEX) %>% 
+  add_total_group() %>% 
+  set_count_layer_formats(
+    n_counts = f_str("xx", n)
+  ) %>% 
   add_layer(
     group_desc(AGE, by = "Age (years)") %>% 
       set_format_strings(
-        "Mean"= f_str('a.a', mean),
-        "Standard Deviation" = f_str("a.a+2", sd),
-        "Q1, Median, Q3" = f_str('a.a+1, a.a+1, a.a+1', q1, median, q3)
+        "Mean (SD)" = f_str("a.a (a.a+1)", mean, sd),
+        "Q1, Median, Q3" = f_str("a.a+1, a.a+1, a.a+1", q1, median, q3)
       )
   ) %>% 
   add_layer(
-    group_count(AGEGR1, by = "Age Categories n (%)") %>% 
-      set_format_strings(f_str("xx (xx%)", n, pct))
+    group_count(AGEGR1, by = "Age Categories n (%)")
   ) %>% 
+  add_layer(
+    group_count(RACE, by = "Race n (%)") 
+  )
+
+t %>% 
   build() %>% 
-  kable()
-
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
 ```
 
-## Including Plots
+## Example 4: Adverse Events
 
-You can also embed plots, for example:
+Let's consider another type of table - Adverse Events. 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Here we demonstrate a few other capabilities of count layers specifically:
+
+- Two variables can be counted together using the `vars()` argument. Both will be summarized, with the second variable nested inside the first.
+- Distinct counts can be calculated with a specified grouping variable
+- Distinct and non-distinct counts can be presented side by side
+- Order variables can controlled with helper functions, and for count layers, users are able to specify particular number from a selected column from within the summary to extract out to an order variable for the layer
+- Risk difference can be added by specifying treatment groups to compare. Currently this uses the `prop.test()` function from base R, but we plan to expand this in the future to add common methods.
+
+
+```{r Adverse Events 1}
+t <- tplyr_table(adae, TRTA, where = SAFFL == "Y") %>% 
+  set_pop_data(adsl) %>% 
+  set_pop_treat_var(TRT01A) %>% 
+  add_layer(
+    group_count(vars(AEBODSYS, AEDECOD)) %>% 
+      set_distinct_by(USUBJID) %>% 
+      set_format_strings(
+        n_counts = f_str("xx (xx.x%) [x]", distinct, distinct_pct, n)
+        ) %>% 
+      set_nest_count(TRUE) %>% 
+      set_order_count_method('bycount') %>% 
+      set_result_order_var(distinct_n) %>% 
+      set_ordering_cols('Xanomeline High Dose') %>% 
+      add_risk_diff(
+        c('Xanomeline High Dose', 'Placebo'), 
+        c('Xanomeline Low Dose', 'Placebo')
+      )
+  )
+
+suppressWarnings(build(t)) %>% 
+  select(starts_with('row'), starts_with('var'), starts_with('rdiff'), starts_with('ord')) %>% 
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Example 5: Shift Tables
+
+Let's do one last example - shift tables! This leverages the last layer type that we haven't touched on yet. So what do you need to make a shift table? Variable to mark a change in state. 
+
+There's another prep step here that might be necessary. If you don't have a representation of each state in your data for both variables, then that row or column will not form. You can get around this by using factor variables and specifying the levels. This also assists with ordering.
+
+Note that here we're also using `by` variables, of which you can submit multiple by using `vars()`. What we end up getting here is the summary of changes is state by parameter and visit. And for simplicity's sake, we've filtered down to just the Creatine Kinase test.
+
+```{r Shift Table 1}
+adlb$ANRIND <- factor(adlb$ANRIND, levels=c("L", "N", "H"))
+adlb$BNRIND <- factor(adlb$BNRIND, levels=c("L", "N", "H"))
+
+t <- tplyr_table(adlb, TRTA, where=PARAMCD == "CK") %>%
+  add_layer(
+    group_shift(vars(row = BNRIND, column = ANRIND), by = vars(PARAM, VISIT))
+  )
+
+t %>% 
+  build() %>% 
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
+```
