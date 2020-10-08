@@ -1,0 +1,178 @@
+---
+title: "Atorus-Test-Drive"
+author: "Eli Miller"
+date: "10/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Tplyr)
+library(dplyr)
+library(huxtable)
+library(magrittr)
+library(pharmaRTF)
+library(knitr)
+load("data/adae.Rdata")
+load("data/adlb.Rdata")
+load("data/adsl.Rdata")
+```
+
+## Tplyr
+
+Here is a Table displaying the end of study flag and the disposition code across the study.
+
+A lot of cool stuff is happening here. Be sure to check out the Tplyr Booth!
+
+```{r cars}
+eos_tab <- tplyr_table(adsl, TRT01A) %>%
+  add_total_group() %>%
+  add_layer(
+    group_count(EOSSTT) %>%
+      add_total_row()
+  ) %>%
+  add_layer(
+    group_count(vars(EOSSTT, DCDECOD)) %>%
+      set_nest_count(TRUE)
+  )
+eos_b <- eos_tab %>%
+  build() %>%
+  apply_row_masks(row_breaks = TRUE) %>%
+  select(-starts_with("ord")) %>%
+  select(c(1,2,5,4,3)) %>%
+  add_column_headers(
+    "  | Placebo \\line(N=**Placebo**) | Xanomeline Low Dose \\line(N=**Xanomeline Low Dose**) | Xanomeline High Dose \\line(N=**Xanomeline High Dose**) | Total \\line(N=**Total**)",
+    header_n(eos_tab)
+  )
+
+kable(eos_b)
+```
+
+## pharmaRTF
+
+Huxtable does the heavy lifting. Here were passing some styling information to the table. We pass the table back to huxtable to make the rtf for the table.
+
+```{r huxtable_prep}
+  # The Column names are in the table already so don't add them.
+hx <- huxtable::as_hux(eos_b, add_colnames = FALSE) %>%
+  # We use some encoding in the column headers so don't escape that
+  huxtable::set_escape_contents(FALSE) %>%
+  # Make the top row bold
+  huxtable::set_bold(1, 1:ncol(eos_b), TRUE) %>%
+  # Center top row
+  huxtable::set_align(1, 1:ncol(eos_b), "center") %>%
+  # Set the width of the entire table
+  huxtable::set_width(1.5)
+
+```
+
+Here pharmaRTF is adding titles and footnotes to the huxtable table. We note several additional styling arguments for the titles and column headers.
+
+```{r pressure}
+rtf <- pharmaRTF::rtf_doc(hx) %>%
+  # Add a couple of titles
+  pharmaRTF::add_titles(
+    #  first title, centered, size 30 font
+    pharmaRTF::hf_line("The Atorus Test Drive",
+                       align = "center", bold = TRUE, font_size = 30),
+    # second title, size 14 font split alignment
+    pharmaRTF::hf_line(c("An End of Study Status Table", "Created with Tplyr, huxtable, and pharmaRTF"),
+                       align = "split", italic = TRUE, font_size = 14)) %>%
+  pharmaRTF::add_footnotes(
+    # footnote to contain the page number and the date the rtf was made
+    pharmaRTF::hf_line(c("PAGE_FORMAT: Page %s or %s", "DATE_FORMAT: %H:%M %A, %B %d, %Y"),
+                       align = "split")
+    ) %>%
+  # Make the table appear more compact
+  pharmaRTF::set_ignore_cell_padding(TRUE) %>%
+  # Set a buffer of one row above and below the column headers
+  pharmaRTF::set_column_header_buffer(top = 1, bottom = 1) %>%
+  # Set the default font size as 10
+  pharmaRTF::set_font_size(10) %>%
+  # Output RTF.
+  suppressWarnings(write_rtf("test1.rtf"))
+```
+
+## Tplyr
+
+Again Tplyr is used to create the table itself. Additional factors are added to the adsl. These will appear in the output even though they aren't actually in the data!
+
+```{r}
+adsl <- adsl %>% 
+  mutate(
+    SEX = recode(SEX, M = "Male", F = "Female"), 
+    RACE = factor(RACE, c("AMERICAN INDIAN OR ALASKA NATIVE", "ASIAN", "BLACK OR AFRICAN AMERICAN", 
+                          "NATIVE HAWAIIN OR OTHER PACIFIC ISLANDER", "WHITE", "MULTIPLE"))
+  )
+
+t <- tplyr_table(adsl, TRT01P) %>% 
+  add_total_group() %>% 
+  add_layer(name = 'Sex', 
+    group_count(SEX, by = "Sex n (%)") %>% 
+      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_denom_ignore("NA")
+  ) %>% 
+  add_layer(name = 'Age',
+    group_desc(AGE, by = "Age (Years)")
+  ) %>% 
+  add_layer(name = 'Age group', 
+    group_count(AGEGR1, by = "Age Categories n (%)") %>% 
+      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_denom_ignore("NA")
+  ) %>% 
+  add_layer(name = 'Race', 
+    group_count(RACE, by = "Race n (%)") %>% 
+      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_denom_ignore("NA") %>% 
+      set_order_count_method("byfactor")
+  ) %>% 
+  add_layer(name = 'Ethnic', 
+    group_count(ETHNIC, by = "Ethnicity n (%)") %>% 
+      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_denom_ignore("NA")
+  )
+
+dat <- build(t) %>%
+  apply_row_masks(row_breaks = TRUE) %>%
+  select(-starts_with("ord")) %>%
+  select(1,2,3,6,5,4) %>%
+  add_column_headers(
+    " | | Placebo\\line(N=**Placebo**) | Xanomeline Low Dose\\line(N=**Xanomeline Low Dose**) | Xanomeline High Dose\\line(N=**Xanomeline High Dose**) | Total\\line(N=**Total**)",
+    header_n=header_n(t)
+  )
+
+kable(dat)
+```
+
+## pharmaRTF
+
+```{r}
+  # The Column names are in the table already so don't add them.
+hx <- huxtable::as_hux(dat, add_colnames = FALSE) %>%
+  # We use some encoding in the column headers so don't escape that
+  huxtable::set_escape_contents(FALSE) %>%
+  # Make the top row bold
+  huxtable::set_bold(1, 1:ncol(dat), TRUE) %>%
+  huxtable::set_align(1, 1:ncol(dat), "center") %>%
+  huxtable::set_width(1.5)
+```
+
+We've added a couple extra things to this document. It's longer and appears across multiple pages; In the bottom left the footnote will display which page you're on. We've also added a footnote to display the file path the document was created by, improving tractability.
+
+```{r}
+rtf <- rtf_doc(hx)  %>%
+  pharmaRTF::add_titles(
+    pharmaRTF::hf_line("The Atorus Test Drive",
+                       align = "center", bold = TRUE, font_size = 30),
+    pharmaRTF::hf_line(c("An End of Study Status Table", "Created with Tplyr, huxtable, and pharmaRTF"),
+                       align = "split", italic = TRUE, font_size = 14)) %>%
+  pharmaRTF::add_footnotes(
+    pharmaRTF::hf_line(c("PAGE_FORMAT: Page %s or %s", "DATE_FORMAT: %H:%M %A, %B %d, %Y"),
+                       align = "split"),
+    pharmaRTF::hf_line("FILE_PATH: %s", algin = "left")
+    ) %>%
+  set_ignore_cell_padding(TRUE) %>%
+  set_column_header_buffer(top = 1, bottom = 1) %>%
+  set_font_size(12) %>%
+  suppressWarnings(write_rtf("test2.rtf"))
+```
