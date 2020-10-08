@@ -1,0 +1,50 @@
+---
+title: "Tplyr Test Drive"
+author: "Mike Stackhouse"
+date: "10/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(magrittr)
+library(Tplyr)
+library(kableExtra)
+load('data/adsl.Rdata')
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
+  add_layer(
+    group_desc(AGE, by = "Age (years)") %>% 
+      set_format_strings(
+        "Mean"= f_str('a.a', mean),
+        "Standard Deviation" = f_str("a.a+2", sd),
+        "Q1, Median, Q3" = f_str('a.a+1, a.a+1, a.a+1', q1, median, q3)
+      )
+  ) %>% 
+  add_layer(
+    group_count(AGEGR1, by = "Age Categories n (%)") %>% 
+      set_format_strings(f_str("xx (xx%)", n, pct))
+  ) %>% 
+  build() %>% 
+  kable()
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
