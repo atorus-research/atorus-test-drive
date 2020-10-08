@@ -29,7 +29,7 @@ So without further ado...
 Let's start with a basic demographics table, and let's make it no frills. This will start introducing you to the concept of stacking layers. For simplicity, let's also start by looking at sex, age, age category, and race.
 
 ```{r Demographics 1}
-tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
+t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
   add_layer(
     group_count(SEX, by = "Sex n (%)")
   ) %>% 
@@ -41,10 +41,13 @@ tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>%
   ) %>% 
   add_layer(
     group_count(RACE, by = "Race n (%)") 
-  ) %>% 
-  build() %>% 
-  kable()
+  )
 
+t %>% 
+  build() %>% 
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
 ```
 
 ## Example 2: Demographics Cleaned Up
@@ -66,7 +69,7 @@ adsl <- adsl %>%
     AGEGR1 = factor(AGEGR1, c('<65', '65-80', '>80'))
   )
 
-tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
+t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
   add_layer(
     group_count(SEX, by = "Sex n (%)")
   ) %>% 
@@ -78,9 +81,13 @@ tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>%
   ) %>% 
   add_layer(
     group_count(RACE, by = "Race n (%)") 
-  ) %>% 
+  )
+
+t %>% 
   build() %>% 
-  kable()
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
 
 ```
 
@@ -93,7 +100,7 @@ Let's change things up a bit.
 - Let's also add a total group into the mix
 
 ```{r Demographics 3}
-tplyr_table(adsl, TRT01P, where = SAFFL == "Y", cols=SEX) %>% 
+t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y", cols=SEX) %>% 
   add_total_group() %>% 
   set_count_layer_formats(
     n_counts = f_str("xx", n)
@@ -110,9 +117,13 @@ tplyr_table(adsl, TRT01P, where = SAFFL == "Y", cols=SEX) %>%
   ) %>% 
   add_layer(
     group_count(RACE, by = "Race n (%)") 
-  ) %>% 
+  )
+
+t %>% 
   build() %>% 
-  kable()
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
 ```
 
 ## Example 4: Adverse Events
@@ -150,7 +161,9 @@ t <- tplyr_table(adae, TRTA, where = SAFFL == "Y") %>%
 
 suppressWarnings(build(t)) %>% 
   select(starts_with('row'), starts_with('var'), starts_with('rdiff'), starts_with('ord')) %>% 
-  kable()
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
 ```
 
 ## Example 5: Shift Tables
@@ -162,13 +175,17 @@ There's another prep step here that might be necessary. If you don't have a repr
 Note that here we're also using `by` variables, of which you can submit multiple by using `vars()`. What we end up getting here is the summary of changes is state by parameter and visit. And for simplicity's sake, we've filtered down to just the Creatine Kinase test.
 
 ```{r Shift Table 1}
-
 adlb$ANRIND <- factor(adlb$ANRIND, levels=c("L", "N", "H"))
 adlb$BNRIND <- factor(adlb$BNRIND, levels=c("L", "N", "H"))
-tplyr_table(adlb, TRTA, where=PARAMCD == "CK") %>%
+
+t <- tplyr_table(adlb, TRTA, where=PARAMCD == "CK") %>%
   add_layer(
     group_shift(vars(row = BNRIND, column = ANRIND), by = vars(PARAM, VISIT))
-  ) %>%
+  )
+
+t %>% 
   build() %>% 
-  kable()
+  kable() %>% 
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
 ```
