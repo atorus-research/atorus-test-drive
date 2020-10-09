@@ -18,7 +18,7 @@ load('data/adlb.Rdata')
 
 ## Take Tplyr for a Test Drive
 
-Welcome! We've created this repository and document to allow you to get some hands on experience using our packages [Tplyr](https://atorus-research.github.io/Tplyr/index.html) and [pharmaRTF](https://atorus-research.github.io/pharmaRTF/index.html). If you're viewing this on GitHub, then we recommend you hop on over to RStudio Cloud through [this link](tbd) to test drive the package for yourself without the hassle of setting things up for yourself. 
+Welcome! We've created this repository and document to allow you to get some hands on experience using our packages [Tplyr](https://atorus-research.github.io/Tplyr/index.html) and [pharmaRTF](https://atorus-research.github.io/pharmaRTF/index.html). If you're viewing this on GitHub, then we recommend you hop on over to RStudio Cloud through [this link](https://rstudio.cloud/project/1744479) to test drive the package for yourself without the hassle of setting things up for yourself. 
 
 Here we have a few hands on examples of Tplyr for you to use, explore, and experiment. For more in depth explanations of certain aspects of this package, check out our package website right [here](https://atorus-research.github.io/Tplyr/index.html). 
 
