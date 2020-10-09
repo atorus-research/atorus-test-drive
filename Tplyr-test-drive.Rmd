@@ -29,22 +29,28 @@ So without further ado...
 Let's start with a basic demographics table, and let's make it no frills. This will start introducing you to the concept of stacking layers. For simplicity, let's also start by looking at sex, age, age category, and race.
 
 ```{r Demographics 1}
+# Create the table object
 t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
+  # Add a count layer for sex
   add_layer(
     group_count(SEX, by = "Sex n (%)")
   ) %>% 
+  # Add a descriptive statistics layer for age
   add_layer(
     group_desc(AGE, by = "Age (years)")
   ) %>% 
+  # Add a count layer for age categories
   add_layer(
     group_count(AGEGR1, by = "Age Categories n (%)")
   ) %>% 
+  # Add a count layer for race
   add_layer(
     group_count(RACE, by = "Race n (%)") 
   )
 
 t %>% 
   build() %>% 
+  # Kable and all forward is just for presentation in the HTML
   kable() %>% 
   kable_styling() %>%
   scroll_box(width = "100%", height = "500px")
@@ -61,14 +67,19 @@ That looks pretty good, but there's a few things that we can clean up a bit more
 Factors can help us out here - let's see how. This can be handled easily with a bit of pre-processing.
 
 ```{r Demographics 2}
+# Do some pre-processing
 adsl <- adsl %>% 
   mutate(
+    # Expand out sex to full words
     SEX = recode(SEX, M = "Male", F = "Female"), 
+    # Convert RACE to a factor and add levels to be displayed
     RACE = factor(RACE, c("AMERICAN INDIAN OR ALASKA NATIVE", "ASIAN", "BLACK OR AFRICAN AMERICAN", 
                           "NATIVE HAWAIIN OR OTHER PACIFIC ISLANDER", "WHITE", "MULTIPLE")),
+    # Convert age group to a factor and order properly
     AGEGR1 = factor(AGEGR1, c('<65', '65-80', '>80'))
   )
 
+# Create the table object and do everything like example 1
 t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y") %>% 
   add_layer(
     group_count(SEX, by = "Sex n (%)")
@@ -100,18 +111,25 @@ Let's change things up a bit.
 - Let's also add a total group into the mix
 
 ```{r Demographics 3}
+# Create the table object, this time with an additional columns argument
 t <- tplyr_table(adsl, TRT01P, where = SAFFL == "Y", cols=SEX) %>% 
+  # Add a total group that includes all treated subjects
   add_total_group() %>% 
+  # Set default count formats for all layers
   set_count_layer_formats(
     n_counts = f_str("xx", n)
   ) %>% 
+  # Add a descriptive statistics layer for age
   add_layer(
     group_desc(AGE, by = "Age (years)") %>% 
+      # Set the format strings and use auto precision
       set_format_strings(
         "Mean (SD)" = f_str("a.a (a.a+1)", mean, sd),
         "Q1, Median, Q3" = f_str("a.a+1, a.a+1, a.a+1", q1, median, q3)
       )
   ) %>% 
+  # And the other layers like before, but standard count layer formats
+  # pass through from the table level
   add_layer(
     group_count(AGEGR1, by = "Age Categories n (%)")
   ) %>% 
@@ -140,26 +158,42 @@ Here we demonstrate a few other capabilities of count layers specifically:
 
 
 ```{r Adverse Events 1}
+# Create the table object
 t <- tplyr_table(adae, TRTA, where = SAFFL == "Y") %>% 
+  # Set a separate population data set
   set_pop_data(adsl) %>% 
+  # Set the population dat aset treatment variable
   set_pop_treat_var(TRT01A) %>% 
+  # Add a count layer
   add_layer(
+    # Add a nested count layer by supplying two variables to be summarized
     group_count(vars(AEBODSYS, AEDECOD)) %>% 
+      # Set distinct counts by subject
       set_distinct_by(USUBJID) %>% 
+      # Set the formats to include distinct counts, distinct percent, and event counts
       set_format_strings(
         n_counts = f_str("xx (xx.x%) [x]", distinct, distinct_pct, n)
         ) %>% 
+      # Get rid of the outer row label column
       set_nest_count(TRUE) %>% 
+      # Order using counts from the summarized data
       set_order_count_method('bycount') %>% 
+      # Use the distinct_n variable as that order variable
       set_result_order_var(distinct_n) %>% 
+      # Pull the data from the Xanomeline High Dose column
       set_ordering_cols('Xanomeline High Dose') %>% 
+      # Add risk difference calculations for both treatment groups vs. placebo
       add_risk_diff(
         c('Xanomeline High Dose', 'Placebo'), 
         c('Xanomeline Low Dose', 'Placebo')
       )
   )
 
+# The warnings here come from calculating risk difference 
+# when there's really not enough data to be statistically significant,
+# so we'll just mask them right now
 suppressWarnings(build(t)) %>% 
+  # For presentation sake let's order the columns
   select(starts_with('row'), starts_with('var'), starts_with('rdiff'), starts_with('ord')) %>% 
   kable() %>% 
   kable_styling() %>%
@@ -175,10 +209,16 @@ There's another prep step here that might be necessary. If you don't have a repr
 Note that here we're also using `by` variables, of which you can submit multiple by using `vars()`. What we end up getting here is the summary of changes is state by parameter and visit. And for simplicity's sake, we've filtered down to just the Creatine Kinase test.
 
 ```{r Shift Table 1}
+# Convert the 'from' and 'to' columns to factors, order and force missing levels
 adlb$ANRIND <- factor(adlb$ANRIND, levels=c("L", "N", "H"))
 adlb$BNRIND <- factor(adlb$BNRIND, levels=c("L", "N", "H"))
 
+# Create the table object
 t <- tplyr_table(adlb, TRTA, where=PARAMCD == "CK") %>%
+  # Add the shift layer, which takes two variables that will be the 
+  # row and column variable you want for presentation
+  # Additionally note here that we're using two by variables to group by
+  # parameter and visit (though we've filtered to the CK parameter)
   add_layer(
     group_shift(vars(row = BNRIND, column = ANRIND), by = vars(PARAM, VISIT))
   )
