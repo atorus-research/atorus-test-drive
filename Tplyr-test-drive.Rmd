@@ -7,10 +7,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(dplyr)
-library(magrittr)
-library(Tplyr)
-library(kableExtra)
+require(dplyr)
+require(magrittr)
+require(Tplyr)
+require(kableExtra)
 load('data/adsl.Rdata')
 load('data/adae.Rdata')
 load('data/adlb.Rdata')
