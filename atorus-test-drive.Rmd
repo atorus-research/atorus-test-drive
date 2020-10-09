@@ -165,14 +165,18 @@ rtf <- rtf_doc(hx)  %>%
     pharmaRTF::hf_line("The Atorus Test Drive",
                        align = "center", bold = TRUE, font_size = 30),
     pharmaRTF::hf_line(c("An End of Study Status Table", "Created with Tplyr, huxtable, and pharmaRTF"),
-                       align = "split", italic = TRUE, font_size = 14)) %>%
+                       align = "split", italic = TRUE, font_size = 14),
+    replace = TRUE
+    ) %>%
   pharmaRTF::add_footnotes(
     pharmaRTF::hf_line(c("PAGE_FORMAT: Page %s or %s", "DATE_FORMAT: %H:%M %A, %B %d, %Y"),
                        align = "split"),
-    pharmaRTF::hf_line("FILE_PATH: %s", algin = "left")
+    pharmaRTF::hf_line("FILE_PATH: Sourced from: %s"),
+    replace = TRUE
     ) %>%
   set_ignore_cell_padding(TRUE) %>%
   set_column_header_buffer(top = 1, bottom = 1) %>%
-  set_font_size(12) %>%
-  suppressWarnings(write_rtf("test2.rtf"))
+  set_font_size(10) %>%
+  set_pagesize(c(height = 6, width = 12)) %>%
+  write_rtf("test2.rtf")
 ```

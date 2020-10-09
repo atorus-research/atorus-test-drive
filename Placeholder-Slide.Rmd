@@ -1,0 +1,31 @@
+---
+title: "Placeholder-Slide"
+author: "Eli Miller"
+date: "10/9/2020"
+
+output:
+  xaringan::moon_reader
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Be Back Soon!
+
+```{r}
+countdown::countdown(minutes = 0, seconds = 5, 
+          left = 0, right = 0,
+          bottom = "25%",
+          padding = "50px",
+          margin = "5%")
+```
+
+In the meantime check out pharmaRTF and Tplyr!
+
+* [pharmaRTF Website](https://atorus-research.github.io/pharmaRTF/index.html)
+* [Tplyr Website](https://atorus-research.github.io/Tplyr/index.html)
+
+
+
+We'll be back in:
