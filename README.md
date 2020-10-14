@@ -2,7 +2,11 @@
 
 Test drive our packages on RStudio Cloud! 
 
+Tplyr:
 https://rstudio.cloud/project/1744479
+
+pharmaRTF:
+https://rstudio.cloud/project/1761433
 
 ## Links
 
