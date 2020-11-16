@@ -109,7 +109,7 @@ t <- tplyr_table(adsl, TRT01P) %>%
   add_total_group() %>% 
   add_layer(name = 'Sex', 
     group_count(SEX, by = "Sex n (%)") %>% 
-      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_missing_count(f_str('xx', n), Missing = "NA") %>%
       set_denom_ignore("NA")
   ) %>% 
   add_layer(name = 'Age',
@@ -117,18 +117,18 @@ t <- tplyr_table(adsl, TRT01P) %>%
   ) %>% 
   add_layer(name = 'Age group', 
     group_count(AGEGR1, by = "Age Categories n (%)") %>% 
-      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_missing_count(f_str('xx', n), Missing = "NA") %>%
       set_denom_ignore("NA")
   ) %>% 
   add_layer(name = 'Race', 
     group_count(RACE, by = "Race n (%)") %>% 
-      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_missing_count(f_str('xx', n), Missing = "NA") %>%
       set_denom_ignore("NA") %>% 
       set_order_count_method("byfactor")
   ) %>% 
   add_layer(name = 'Ethnic', 
     group_count(ETHNIC, by = "Ethnicity n (%)") %>% 
-      set_missing_count(f_str('xx', n), string = "NA") %>%
+      set_missing_count(f_str('xx', n), Missing = "NA") %>%
       set_denom_ignore("NA")
   )
 
@@ -161,6 +161,7 @@ We've added a couple extra things to this document. It's longer and appears acro
 
 ```{r}
 rtf <- rtf_doc(hx)  %>%
+  # Add two titles
   pharmaRTF::add_titles(
     pharmaRTF::hf_line("The Atorus Test Drive",
                        align = "center", bold = TRUE, font_size = 30),
@@ -168,6 +169,7 @@ rtf <- rtf_doc(hx)  %>%
                        align = "split", italic = TRUE, font_size = 14),
     replace = TRUE
     ) %>%
+  # Add two footnotes
   pharmaRTF::add_footnotes(
     pharmaRTF::hf_line(c("PAGE_FORMAT: Page %s or %s", "DATE_FORMAT: %H:%M %A, %B %d, %Y"),
                        align = "split"),
@@ -177,6 +179,7 @@ rtf <- rtf_doc(hx)  %>%
   set_ignore_cell_padding(TRUE) %>%
   set_column_header_buffer(top = 1, bottom = 1) %>%
   set_font_size(10) %>%
+  # Make the page shorter to demo pagination.
   set_pagesize(c(height = 6, width = 12)) %>%
-  write_rtf("test2.rtf")
+  suppressWarnings(write_rtf("test2.rtf"))
 ```
